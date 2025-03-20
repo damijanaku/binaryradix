@@ -73,7 +73,15 @@ int main(int argc, const char* argv[]) {
     if (argc < 2) return 0;
     if (!Branje_Stevil(A, argv[1])) return 0;
 
-    
+    for (int k = 0; k < 8; k++) {
+        // Ustvari vektor D z k-tim bitom vsake številke v A
+        vector<int> D(A.size());
+        for (size_t i = 0; i < A.size(); i++) {
+            D[i] = (A[i] >> k) & 1;
+        }
+
+        
+    }
 
     Izpis_Stevil(&A[0], A.size());
     return 0;
