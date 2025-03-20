@@ -83,6 +83,15 @@ int main(int argc, const char* argv[]) {
         // Klic funkcije za sortiranje, ki vrne indekse
         vector<int> sortedIndices = countingSort(D);
 
+        // Create a new array with the values arranged according to the sorted indices
+        vector<unsigned char> B(A.size());
+        for (size_t i = 0; i < A.size(); i++) {
+            B[i] = A[sortedIndices[i]];
+        }
+
+        // Update A for the next iteration
+        A = B;
+
         
     }
 
