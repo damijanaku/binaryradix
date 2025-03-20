@@ -29,6 +29,54 @@ void Izpis_Stevil(unsigned char* polje, unsigned int velikost) {
         output << static_cast<int>(polje[i]) << ' ';
 }
 
+vector<int> countingSort(const vector<int>& A) {
+
+	//find min value
+	int minValue = A[0];
+	for (size_t i = 1; i < A.size(); i++) {
+		if (A[i] < minValue) {
+			minValue = A[i];
+		}
+	}
+
+	//podpora negativnim stevilom
+	for (size_t i = 0; i < A.size(); i++) {
+		A[i] -= minValue;
+	}
+
+
+	int maxValue = A[0];
+	//find max value
+	for (size_t i = 1; i < A.size(); i++) {
+		if (A[i] > maxValue) {
+			maxValue = A[i];
+		}
+	}
+
+	//initicalizacija polja c
+	vector<int> C(maxValue + 1, 0);
+
+
+	for (size_t i = 0; i < A.size(); i++) {
+		C[A[i]]++;
+	}
+
+	for (size_t i = 1; i < C.size(); i++) {
+		C[i] += C[i - 1];
+	}
+
+	vector<int> B(A.size());
+
+	for (int i = A.size() - 1; i >= 0; i--) {
+		B[C[A[i]] - 1] = A[i];
+		C[A[i]]--;
+	}
+
+	for (int i = 0; i < A.size(); i++) {
+		A[i] = B[i] + minValue;
+	}
+}
+
 int main(int argc, const char* argv[]) {
     vector<unsigned char> A;
     if (argc < 2) return 0;
