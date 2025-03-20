@@ -80,6 +80,9 @@ int main(int argc, const char* argv[]) {
             D[i] = (A[i] >> k) & 1;
         }
 
+        // Klic funkcije za sortiranje, ki vrne indekse
+        vector<int> sortedIndices = countingSort(D);
+
         
     }
 
