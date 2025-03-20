@@ -29,52 +29,43 @@ void Izpis_Stevil(unsigned char* polje, unsigned int velikost) {
         output << static_cast<int>(polje[i]) << ' ';
 }
 
-vector<int> countingSort(const vector<int>& A) {
-
-	//find min value
-	int minValue = A[0];
-	for (size_t i = 1; i < A.size(); i++) {
-		if (A[i] < minValue) {
-			minValue = A[i];
-		}
-	}
-
-	//podpora negativnim stevilom
-	for (size_t i = 0; i < A.size(); i++) {
-		A[i] -= minValue;
-	}
-
-
-	int maxValue = A[0];
-	//find max value
-	for (size_t i = 1; i < A.size(); i++) {
-		if (A[i] > maxValue) {
-			maxValue = A[i];
-		}
-	}
-
-	//initicalizacija polja c
-	vector<int> C(maxValue + 1, 0);
-
-
-	for (size_t i = 0; i < A.size(); i++) {
-		C[A[i]]++;
-	}
-
-	for (size_t i = 1; i < C.size(); i++) {
-		C[i] += C[i - 1];
-	}
-
-	vector<int> B(A.size());
-
-	for (int i = A.size() - 1; i >= 0; i--) {
-		B[C[A[i]] - 1] = A[i];
-		C[A[i]]--;
-	}
-
-	for (int i = 0; i < A.size(); i++) {
-		A[i] = B[i] + minValue;
-	}
+vector<int> countingSort(const vector<int>& D) {
+    int minValue = D[0];
+    // Find the minimum value in the array
+    for (size_t i = 1; i < D.size(); i++) {
+        if (D[i] < minValue) {
+            minValue = D[i];
+        }
+    }
+    // Adjust for negative numbers
+    vector<int> adjustedD(D.size());
+    for (size_t i = 0; i < D.size(); i++) {
+        adjustedD[i] = D[i] - minValue;
+    }
+    int maxValue = adjustedD[0];
+    // Find the maximum value in the adjusted array
+    for (size_t i = 1; i < adjustedD.size(); i++) {
+        if (adjustedD[i] > maxValue) {
+            maxValue = adjustedD[i];
+        }
+    }
+    // Initialize the counting array
+    vector<int> C(maxValue + 1, 0);
+    // Count occurrences of each value
+    for (size_t i = 0; i < adjustedD.size(); i++) {
+        C[adjustedD[i]]++;
+    }
+    // Compute cumulative sum
+    for (size_t i = 1; i < C.size(); i++) {
+        C[i] += C[i - 1];
+    }
+    vector<int> B(D.size());
+    // Build the sorted array
+    for (int i = D.size() - 1; i >= 0; i--) {
+        B[C[adjustedD[i]] - 1] = i;  // Store the original index, not the value
+        C[adjustedD[i]]--;
+    }
+    return B;
 }
 
 int main(int argc, const char* argv[]) {
