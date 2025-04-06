@@ -7,7 +7,7 @@ jobs:
   check_tests:  # First job: Check if test files exist
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3  
+      - uses: actions/checkout@v4  
       - name: Check if tests exist
         run: | 
           if [ ! -f "binaryradix_test.cpp" ]; then
@@ -18,7 +18,7 @@ jobs:
       - name: Redirect stderr to file
         run: ls -la binaryradix_test.cpp 2> napaka.txt || true  
       - name: Upload error file as artifact
-        uses: actions/upload-artifact@v3  # Share error file with next job
+        uses: actions/upload-artifact@v4  # Share error file with next job
         with:
           name: error-log
           path: napaka.txt
@@ -27,9 +27,9 @@ jobs:
     needs: check_tests  # This job depends on the first job
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download errorlog
-        uses: actions/download-artifact@v3  
+        uses: actions/download-artifact@v4
         with:
           name: error-log
       - name: Check for errors
