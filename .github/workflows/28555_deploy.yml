@@ -69,6 +69,6 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          tags: damijanaku/binaryradix:latest
+          tags: damijanak/binaryradix:latest
 
 
