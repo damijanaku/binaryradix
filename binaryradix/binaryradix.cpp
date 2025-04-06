@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#define TESTING
 
 using namespace std;
 
@@ -43,24 +44,19 @@ vector<int> countingSort(const vector<int>& D) {
         adjustedD[i] = D[i] - minValue;
     }
     int maxValue = adjustedD[0];
-    // Find the maximum value in the adjusted array
     for (size_t i = 1; i < adjustedD.size(); i++) {
         if (adjustedD[i] > maxValue) {
             maxValue = adjustedD[i];
         }
     }
-    // Initialize the counting array
     vector<int> C(maxValue + 1, 0);
-    // Count occurrences of each value
     for (size_t i = 0; i < adjustedD.size(); i++) {
         C[adjustedD[i]]++;
     }
-    // Compute cumulative sum
     for (size_t i = 1; i < C.size(); i++) {
         C[i] += C[i - 1];
     }
     vector<int> B(D.size());
-    // Build the sorted array
     for (int i = D.size() - 1; i >= 0; i--) {
         B[C[adjustedD[i]] - 1] = i;  // Store the original index, not the value
         C[adjustedD[i]]--;
@@ -68,34 +64,31 @@ vector<int> countingSort(const vector<int>& D) {
     return B;
 }
 
+
+// Only include main when not testing
+#ifndef TESTING
 int main(int argc, const char* argv[]) {
     vector<unsigned char> A;
     if (argc < 2) return 0;
     if (!Branje_Stevil(A, argv[1])) return 0;
-
     for (int k = 0; k < 8; k++) {
-        // Ustvari vektor D z k-tim bitom vsake številke v A
+        // Ustvari vektor D z k-tim bitom vsake Å¡tevilke v A
         vector<int> D(A.size());
         for (size_t i = 0; i < A.size(); i++) {
             D[i] = (A[i] >> k) & 1;
         }
-
         // Klic funkcije za sortiranje, ki vrne indekse
         vector<int> sortedIndices = countingSort(D);
-
         // Create a new array with the values arranged according to the sorted indices
         vector<unsigned char> B(A.size());
         for (size_t i = 0; i < A.size(); i++) {
             B[i] = A[sortedIndices[i]];
         }
-
         // Update A for the next iteration
         A = B;
-
-        
     }
-
     Izpis_Stevil(&A[0], A.size());
     return 0;
 }
+#endif
 
