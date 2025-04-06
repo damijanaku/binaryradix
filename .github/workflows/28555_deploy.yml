@@ -34,17 +34,24 @@ jobs:
       - name: Create Dockerfile
         run: |
           cat > Dockerfile << 'EOF'
-          FROM ubuntu:latest
+          FROM alpine:latest
+          RUN apk add --no-cache g++ make cmake git gtest-dev
           
           # Copy the application
           WORKDIR /app
-          COPY binaryradix/binaryradix.cpp .
+          COPY ./binaryradix/binaryradix.cpp ./binaryradix/binaryradix_test.cpp ./binaryradix/
+          WORKDIR /app/binaryradix
+          RUN mkdir -p /usr/src/gtest/build && \
+          cd /usr/src/gtest/build && \
+          cmake /usr/src/gtest && \
+          make && \
+          cp lib/libgtest*.a /usr/lib/
           
           # Compile the application
-          RUN g++ -o binaryradix binaryradix.cpp
+          RUN g++ -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
           
           # Set the entry point
-          ENTRYPOINT ["/app/binaryradix"]
+          ENTRYPOINT ["./run_tests"]
           EOF
           
       - name: Build and push Docker image for ${{ matrix.platform }}
