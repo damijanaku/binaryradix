@@ -1,7 +1,7 @@
 name: Build and Deploy Docker Image
 on:
   workflow_run:
-    workflows: ["Test C++ Code"]  
+    workflows: ["28555_test.yml"] 
     branches: [master]
     types:
       - completed
