@@ -8,7 +8,7 @@ bool Branje_Stevil(std::vector<unsigned char>& vec, const char s[]);
 void Izpis_Stevil(unsigned char* polje, unsigned int velikost);
 std::vector<int> countingSort(const std::vector<int>& D);
 
-// Test fixture for the Binary Radix Sort tests
+
 class BinaryRadixTest : public ::testing::Test {
 protected:
     void SetUp() override {
