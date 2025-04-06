@@ -7,10 +7,10 @@ on:
       - completed
   workflow_dispatch: #manually
 
-
 jobs:
   docker:
     runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
       - name: Check out the repo
