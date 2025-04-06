@@ -39,6 +39,7 @@ jobs:
           # Install necessary packages
           RUN apt-get update && \
               apt-get install -y --no-install-recommends \
+              build-essential \
               g++ \
               libgtest-dev \
               cmake \
