@@ -58,4 +58,3 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          tags: yourusername/yourrepo:latest-${{ matrix.platform }}
