@@ -1,0 +1,49 @@
+name: Test C++ Code
+on:
+  push:
+    branches: [master]  
+  workflow_dispatch:  # Allow manual triggering
+jobs: 
+  check_tests:  # First job: Check if test files exist
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3  
+      - name: Check if tests exist
+        run: | 
+          if [ ! -f "binaryradix_test.cpp" ]; then
+            echo "Error: test doesn't exist" >&2
+            exit 1
+          fi
+        continue-on-error: true  
+      - name: Redirect stderr to file
+        run: ls -la binaryradix_test.cpp 2> napaka.txt || true  
+      - name: Upload error file as artifact
+        uses: actions/upload-artifact@v3  # Share error file with next job
+        with:
+          name: error-log
+          path: napaka.txt
+  
+  run-tests:  # Second job: Run the tests if they exist
+    needs: check_tests  # This job depends on the first job
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download errorlog
+        uses: actions/download-artifact@v3  
+        with:
+          name: error-log
+      - name: Check for errors
+        run: |
+          if [ -s napaka.txt ]; then  
+            echo "Errors found in previous job"
+            cat napaka.txt
+            exit 1  
+          fi
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential cmake g++ libgtest-dev
+      - name: Build tests
+        run: g++ -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
+      - name: Run tests
+        run: ./run_tests
