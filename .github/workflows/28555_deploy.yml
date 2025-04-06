@@ -36,11 +36,6 @@ jobs:
           cat > Dockerfile << 'EOF'
           FROM ubuntu:latest
           
-          # Install dependencies
-          RUN apt-get install -y \
-              build-essential \
-              g++
-          
           # Copy the application
           WORKDIR /app
           COPY binaryradix/binaryradix.cpp .
