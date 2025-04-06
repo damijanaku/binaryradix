@@ -1,10 +1,8 @@
 name: Test C++ Code
-
 on:
   push:
     branches: [master]
   workflow_dispatch: #manually
-
 jobs:
   check_tests:
     runs-on: self-hosted
@@ -39,6 +37,10 @@ jobs:
   run-tests:
     needs: check_tests
     runs-on: self-hosted
+    strategy:
+      matrix:
+        optimization: [O0, O1, O2, O3]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       
@@ -55,16 +57,24 @@ jobs:
             exit 1
           fi
       
-     # - name: Install dependencies
-      #  run: |
-       #   sudo apt-get install -y build-essential cmake g++ libgtest-dev
+      # - name: Install dependencies
+      #   run: |
+      #     sudo apt-get install -y build-essential cmake g++ libgtest-dev
       
       - name: Build tests
         run: |
           cd binaryradix
-          g++ -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
+          g++ -${{ matrix.optimization }} -o run_tests_${{ matrix.optimization }} binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
       
       - name: Run tests
         run: |
           cd binaryradix
-          ./run_tests
+          echo "Running tests with optimization level: ${{ matrix.optimization }}"
+          ./run_tests_${{ matrix.optimization }}
+          
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.optimization }}
+          path: binaryradix/run_tests_${{ matrix.optimization }}
