@@ -43,7 +43,7 @@ jobs:
           
           # Copy the application
           WORKDIR /app
-          COPY binaryradix.cpp .
+          COPY binaryradix/binaryradix.cpp .
           
           # Compile the application
           RUN g++ -o binaryradix binaryradix.cpp
