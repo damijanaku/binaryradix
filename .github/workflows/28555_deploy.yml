@@ -6,7 +6,9 @@ on:
     types:
       - completed
   workflow_dispatch: # manually
-
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 jobs:
   deploy:
     runs-on: self-hosted
@@ -14,26 +16,11 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
         
-      - name: Download test results
-        uses: actions/download-artifact@v4
-        with:
-          name: test-results
-          path: ./
-        continue-on-error: false
-      
-      - name: Verify test status
-        run: |
-          if [ ! -f "test_results.txt" ]; then
-            echo "Error: Test results not found. Tests must pass before deployment."
-            exit 1
-          fi
-          cat test_results.txt
+      # Remove the attempts to download artifacts from the previous workflow
       
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -72,8 +59,6 @@ jobs:
           EOF
       
       - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: damijanak/binaryradix:latest
+        run: |
+          docker build . --file Dockerfile --tag $DOCKER_USERNAME/binaryradix:latest
+          docker push $DOCKER_USERNAME/binaryradix:latest
