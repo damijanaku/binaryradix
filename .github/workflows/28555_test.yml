@@ -2,7 +2,7 @@ name: TestCppCode
 on:
   push:
     branches: [master]
-  workflow_dispatch: # manually
+  workflow_dispatch: 
 
 jobs:
   check_tests:
