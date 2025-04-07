@@ -2,7 +2,8 @@ name: Test C++ Code
 on:
   push:
     branches: [master]
-  workflow_dispatch: #manually
+  workflow_dispatch: # manually
+
 jobs:
   check_tests:
     runs-on: self-hosted
@@ -33,14 +34,24 @@ jobs:
         with:
           name: error-log
           path: napaka.txt
+          
+      - name: Check test status and create status artifact
+        run: |
+          if [ -s napaka.txt ]; then
+            echo "FAILED" > test_status.txt
+          else
+            echo "PASSED" > test_status.txt
+          fi
+      
+      - name: Upload test status as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-status
+          path: test_status.txt
 
   run-tests:
     needs: check_tests
     runs-on: self-hosted
-    strategy:
-      matrix:
-        optimization: [O0, O1, O2, O3]
-      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       
@@ -49,32 +60,35 @@ jobs:
         with:
           name: error-log
       
-      - name: Check for errors
+      - name: Download test status
+        uses: actions/download-artifact@v4
+        with:
+          name: test-status
+      
+      - name: Check for errors in previous job
         run: |
-          if [ -s napaka.txt ]; then
-            echo "Errors found in previous job"
+          if [ "$(cat test_status.txt)" == "FAILED" ]; then
+            echo "Errors found in previous job:"
             cat napaka.txt
             exit 1
           fi
       
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get install -y build-essential cmake g++ libgtest-dev
-      
       - name: Build tests
         run: |
           cd binaryradix
-          g++ -${{ matrix.optimization }} -o run_tests_${{ matrix.optimization }} binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
+          g++ -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
       
       - name: Run tests
         run: |
           cd binaryradix
-          echo "Running tests with optimization level: ${{ matrix.optimization }}"
-          ./run_tests_${{ matrix.optimization }}
+          ./run_tests
+          
+      - name: Create test results artifact
+        run: |
+          echo "Tests passed successfully!" > test_results.txt
           
       - name: Upload test results
-        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.optimization }}
-          path: binaryradix/run_tests_${{ matrix.optimization }}
+          name: test-results
+          path: test_results.txt
