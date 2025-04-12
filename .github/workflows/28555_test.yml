@@ -1,18 +1,23 @@
 name: TestCppCode
+
+# doloca kdaj se workflow sprozi
 on:
   push:
     branches: [master]
   workflow_dispatch: 
 
 jobs:
+# runs on self hosted
   check_tests:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      
+
+        # Izpis vseh C++ datotek v repozitoriju 
       - name: List directory contents
         run: find . -type f -name "*.cpp" | sort
-        
+
+        # Preveri ali obstajajo
       - name: Check if tests exist
         run: |
           if [ ! -f "binaryradix/binaryradix_test.cpp" ]; then
@@ -25,7 +30,8 @@ jobs:
             exit 1
           fi
         continue-on-error: true
-      
+
+      # preusmeri napake
       - name: Redirect stderr to file
         run: ls -la binaryradix/binaryradix_test.cpp 2> napaka.txt || true
       
@@ -34,7 +40,8 @@ jobs:
         with:
           name: error-log
           path: napaka.txt
-          
+
+         # Naloži datoteko z napakami kot artefakt za uporabo v naslednjem poslu
       - name: Check test status and create status artifact
         run: |
           if [ -s napaka.txt ]; then
@@ -42,19 +49,23 @@ jobs:
           else
             echo "PASSED" > test_status.txt
           fi
-      
+
+        # Naloži statusno datoteko kot artefakt za uporabo v naslednjem poslu
       - name: Upload test status as artifact
         uses: actions/upload-artifact@v4
         with:
           name: test-status
           path: test_status.txt
 
+
+  # Drugi posel - izvajanje testov, če so potrebne datoteke prisotne
   run-tests:
     needs: check_tests
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      
+
+        # Prenesi datoteko z napakami iz prejšnjega posla
       - name: Download errorlog
         uses: actions/download-artifact@v4
         with:
@@ -64,7 +75,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: test-status
-      
+
+      # Preveri status iz prejšnjega posla in prekini, če so bile najdene napake
       - name: Check for errors in previous job
         run: |
           if [ "$(cat test_status.txt)" == "FAILED" ]; then
