@@ -1,22 +1,18 @@
 name: TestCppCode
-
 # doloca kdaj se workflow sprozi
 on:
   push:
     branches: [master]
   workflow_dispatch: 
-
 jobs:
 # runs on self hosted
   check_tests:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-
         # Izpis vseh C++ datotek v repozitoriju 
       - name: List directory contents
         run: find . -type f -name "*.cpp" | sort
-
         # Preveri ali obstajajo
       - name: Check if tests exist
         run: |
@@ -30,7 +26,6 @@ jobs:
             exit 1
           fi
         continue-on-error: true
-
       # preusmeri napake
       - name: Redirect stderr to file
         run: ls -la binaryradix/binaryradix_test.cpp 2> napaka.txt || true
@@ -40,7 +35,6 @@ jobs:
         with:
           name: error-log
           path: napaka.txt
-
          # Naloži datoteko z napakami kot artefakt za uporabo v naslednjem poslu
       - name: Check test status and create status artifact
         run: |
@@ -49,22 +43,31 @@ jobs:
           else
             echo "PASSED" > test_status.txt
           fi
-
         # Naloži statusno datoteko kot artefakt za uporabo v naslednjem poslu
       - name: Upload test status as artifact
         uses: actions/upload-artifact@v4
         with:
           name: test-status
           path: test_status.txt
-
-
-  # Drugi posel - izvajanje testov, če so potrebne datoteke prisotne
+  
+  # Drugi posel - izvajanje testov z matriko za različne optimizacijske nivoje
   run-tests:
     needs: check_tests
     runs-on: self-hosted
+    strategy:
+      matrix:
+        optimization: [0, 1, 2, 3]  # Različni nivoji optimizacije: -O0, -O1, -O2, -O3
+        include:
+          - optimization: 0
+            description: "Brez optimizacije"
+          - optimization: 1
+            description: "Osnovna optimizacija"
+          - optimization: 2
+            description: "Srednja optimizacija"
+          - optimization: 3
+            description: "Najvišja optimizacija"
     steps:
       - uses: actions/checkout@v4
-
         # Prenesi datoteko z napakami iz prejšnjega posla
       - name: Download errorlog
         uses: actions/download-artifact@v4
@@ -75,7 +78,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: test-status
-
       # Preveri status iz prejšnjega posla in prekini, če so bile najdene napake
       - name: Check for errors in previous job
         run: |
@@ -85,22 +87,24 @@ jobs:
             exit 1
           fi
       
-      - name: Build tests
+      - name: Build tests with optimization -O${{ matrix.optimization }}
         run: |
           cd binaryradix
-          g++ -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
+          echo "Gradim s stopnjo optimizacije -O${{ matrix.optimization }} (${{ matrix.description }})"
+          g++ -O${{ matrix.optimization }} -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
       
-      - name: Run tests
+      - name: Run tests with optimization -O${{ matrix.optimization }}
         run: |
           cd binaryradix
-          ./run_tests
+          echo "Zaganjam teste z optimizacijo -O${{ matrix.optimization }}"
+          time ./run_tests
           
-      - name: Create test results artifact
+      - name: Create test results artifact for optimization level ${{ matrix.optimization }}
         run: |
-          echo "Tests passed successfully!" > test_results.txt
+          echo "Tests with optimization -O${{ matrix.optimization }} (${{ matrix.description }}) passed successfully!" > test_results_O${{ matrix.optimization }}.txt
           
-      - name: Upload test results
+      - name: Upload test results for optimization level ${{ matrix.optimization }}
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: test_results.txt
+          name: test-results-O${{ matrix.optimization }}
+          path: test_results_O${{ matrix.optimization }}.txt
