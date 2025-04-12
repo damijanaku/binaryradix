@@ -1,122 +1,106 @@
-# Ime workflow-a
 name: TestCppCode
-# Določa kdaj se workflow sproži
+
+# doloca kdaj se workflow sprozi
 on:
   push:
-    branches: [master]  # Sproži se ob potiskanju v master vejo
-  workflow_dispatch:    # Omogoča ročno sprožitev workflow-a preko GitHub UI
+    branches: [master]
+  workflow_dispatch: 
 
-# Seznam opravil
 jobs:
-  # Prvi posel - preverjanje obstoja testnih datotek
+# runs on self hosted
   check_tests:
-    runs-on: self-hosted  # Izvaja se na lastnem (self-hosted) runner-ju
+    runs-on: self-hosted
     steps:
-      # Pridobi kodo iz repozitorija
       - uses: actions/checkout@v4
-        
-      # Izpis vseh C++ datotek v repozitoriju za lažji pregled
+
+        # Izpis vseh C++ datotek v repozitoriju 
       - name: List directory contents
         run: find . -type f -name "*.cpp" | sort
-      
-      # Simulacija manjkajoče datoteke binaryradix.cpp
-      - name: Simulate missing file
-        run: |
-          # Začasno premaknemo datoteko, če obstaja
-          if [ -f "binaryradix/binaryradix.cpp" ]; then
-            mv binaryradix/binaryradix.cpp binaryradix/binaryradix.cpp.bak
-          fi
-          # Ustvarimo prazno datoteko napaka.txt za beleženje napak
-          touch napaka.txt
-          # Zapišemo napako o manjkajoči datoteki
-          echo "Error: binaryradix.cpp doesn't exist" > napaka.txt
-          # Nastavimo statusno datoteko na FAILED
-          echo "FAILED" > test_status.txt
-      
-      # Preveri obstoj potrebnih testnih datotek
+
+        # Preveri ali obstajajo
       - name: Check if tests exist
         run: |
-          # Ta korak se bo izvedel, a uporabili bomo že nastavljeno napako
-          echo "Preverjanje obstoja datotek..."
+          if [ ! -f "binaryradix/binaryradix_test.cpp" ]; then
+            echo "Error: binaryradix_test.cpp doesn't exist" >&2
+            exit 1
+          fi
+          
           if [ ! -f "binaryradix/binaryradix.cpp" ]; then
             echo "Error: binaryradix.cpp doesn't exist" >&2
-          fi
-        continue-on-error: true  # Nadaljuje z izvajanjem tudi če ta korak ne uspe
-      
-      # Naloži datoteko z napakami kot artefakt za uporabo v naslednjem poslu
-      - name: Upload error file as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: error-log      # Ime artefakta
-          path: napaka.txt     # Pot do datoteke, ki se bo naložila
-          
-      # Naloži statusno datoteko kot artefakt za uporabo v naslednjem poslu
-      - name: Upload test status as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-status     # Ime artefakta
-          path: test_status.txt # Pot do datoteke, ki se bo naložila
-      
-      # Dodaten korak za obnovo datoteke po testu (opcijsko)
-      - name: Restore file (optional)
-        run: |
-          if [ -f "binaryradix/binaryradix.cpp.bak" ]; then
-            mv binaryradix/binaryradix.cpp.bak binaryradix/binaryradix.cpp
+            exit 1
           fi
         continue-on-error: true
 
+      # preusmeri napake
+      - name: Redirect stderr to file
+        run: ls -la binaryradix/binaryradix_test.cpp 2> napaka.txt || true
+      
+      - name: Upload error file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-log
+          path: napaka.txt
+
+         # Naloži datoteko z napakami kot artefakt za uporabo v naslednjem poslu
+      - name: Check test status and create status artifact
+        run: |
+          if [ -s napaka.txt ]; then
+            echo "FAILED" > test_status.txt
+          else
+            echo "PASSED" > test_status.txt
+          fi
+
+        # Naloži statusno datoteko kot artefakt za uporabo v naslednjem poslu
+      - name: Upload test status as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-status
+          path: test_status.txt
+
+
   # Drugi posel - izvajanje testov, če so potrebne datoteke prisotne
   run-tests:
-    needs: check_tests  # Ta posel se izvede šele po končanem poslu check_tests
+    needs: check_tests
     runs-on: self-hosted
     steps:
-      # Pridobi kodo iz repozitorija
       - uses: actions/checkout@v4
-      
-      # Prenesi datoteko z napakami iz prejšnjega posla
+
+        # Prenesi datoteko z napakami iz prejšnjega posla
       - name: Download errorlog
         uses: actions/download-artifact@v4
         with:
-          name: error-log  # Ime artefakta, ki ga želimo prenesti
+          name: error-log
       
-      # Prenesi statusno datoteko iz prejšnjega posla
       - name: Download test status
         uses: actions/download-artifact@v4
         with:
-          name: test-status  # Ime artefakta, ki ga želimo prenesti
-      
+          name: test-status
+
       # Preveri status iz prejšnjega posla in prekini, če so bile najdene napake
       - name: Check for errors in previous job
         run: |
-          # Če je status FAILED, izpiši napake in prekini izvajanje
           if [ "$(cat test_status.txt)" == "FAILED" ]; then
             echo "Errors found in previous job:"
-            cat napaka.txt  # Prikaži vsebino datoteke z napakami
-            exit 1  # Prekini posel z neuspešnim statusom
+            cat napaka.txt
+            exit 1
           fi
       
-      # Zgradi teste z uporabo g++ in Google Test ogrodja
       - name: Build tests
         run: |
-          cd binaryradix  # Premakni se v mapo z izvorno kodo
-          # Prevedi teste z g++ in poveži z Google Test knjižnico
+          cd binaryradix
           g++ -o run_tests binaryradix_test.cpp binaryradix.cpp -lgtest -lgtest_main -pthread
       
-      # Zaženi prevedene teste
       - name: Run tests
         run: |
-          cd binaryradix  # Premakni se v mapo z izvorno kodo
-          ./run_tests     # Zaženi prevedene teste
+          cd binaryradix
+          ./run_tests
           
-      # Ustvari datoteko z rezultati testov
       - name: Create test results artifact
         run: |
-          # Zapiši sporočilo o uspešnosti testov v datoteko
           echo "Tests passed successfully!" > test_results.txt
           
-      # Naloži rezultate testov kot artefakt za poznejši pregled
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
-          name: test-results      # Ime artefakta
-          path: test_results.txt  # Pot do datoteke, ki se bo naložila
+          name: test-results
+          path: test_results.txt
